@@ -1,0 +1,30 @@
+---
+- hosts: targets
+  gather_facts: yes
+  vars:
+    output_dir: "{{ lookup('env', 'OUTPUT_DIR') | default('results', true) }}"
+  tasks:
+    - name: Ensure output directory exists on controller
+      file:
+        path: "{{ output_dir }}"
+        state: directory
+      delegate_to: localhost
+
+    - name: Get user list
+      command: getent passwd
+      register: user_list
+
+    - name: Get listening ports
+      command: ss -tulwn
+      register: port_list
+
+    - name: Save facts to JSON
+      copy:
+        dest: "{{ output_dir }}/facts_{{ inventory_hostname }}.json"
+        content: |
+          {
+            "hostname": "{{ ansible_facts.hostname }}",
+            "users": {{ user_list.stdout_lines | to_json }},
+            "ports": {{ port_list.stdout_lines | to_json }}
+          }
+      delegate_to: localhost
