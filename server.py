@@ -4,6 +4,7 @@ from pathlib import Path
 from flask import Flask, jsonify, send_from_directory, request
 import os
 import logging
+import argparse
 
 level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(level=getattr(logging, level_name, logging.INFO))
@@ -98,7 +99,25 @@ def index():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="AutoConfig Flask API")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=5000,
+        help="Port to run the server on",
+    )
+    parser.add_argument(
+        "--results-dir",
+        default=str(RESULTS_DIR),
+        help="Directory containing rendered results",
+    )
+    args = parser.parse_args()
+
+    RESULTS_DIR = Path(args.results_dir)
+    DB_PATH = RESULTS_DIR / "data.db"
+    DATA_JSON = RESULTS_DIR / "data.json"
+
     init_db()
     load_data()
-    logger.info("Starting Flask server on port %s", 5000)
-    app.run(host="0.0.0.0", port=5000)
+    logger.info("Starting Flask server on port %s", args.port)
+    app.run(host="0.0.0.0", port=args.port)

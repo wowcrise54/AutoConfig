@@ -56,7 +56,7 @@ written to `results/nginx.conf`.
 Alternatively you can run the API directly using:
 
 ```bash
-python3 server.py
+python3 server.py --port 8000 --results-dir results
 ```
 
 The API listens on port 5000 by default and serves host data from the
