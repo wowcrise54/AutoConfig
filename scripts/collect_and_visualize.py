@@ -7,6 +7,11 @@ import shutil
 from pathlib import Path
 from jinja2 import Template
 import argparse
+import logging
+
+level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, level_name, logging.INFO))
+logger = logging.getLogger(__name__)
 
 DEFAULT_NGINX_PORT = 8080
 
@@ -40,7 +45,7 @@ def run_playbook():
             str(PLAYBOOK)
         ], check=True, env=env)
     else:
-        print("ansible-playbook not found, collecting local facts only")
+        logger.info("ansible-playbook not found, collecting local facts only")
         collect_local_facts()
 
 
@@ -147,7 +152,7 @@ def generate_site(hosts):
 
     save_to_db(hosts)
 
-    print(f"Report written to {output_file}")
+    logger.info("Report written to %s", output_file)
 
 
 def generate_nginx_config(port=DEFAULT_NGINX_PORT):
@@ -171,7 +176,7 @@ def start_nginx(config_path):
             "daemon off;",
         ], check=True)
     except FileNotFoundError:
-        print("nginx is not installed. Please install nginx to serve the site.")
+        logger.warning("nginx is not installed. Please install nginx to serve the site.")
 
 
 def main():
@@ -188,8 +193,8 @@ def main():
     hosts = load_results()
     generate_site(hosts)
     cfg = generate_nginx_config(port=args.port)
-    print(f"nginx configuration written to {cfg}")
-    print(f"Serving results on http://localhost:{args.port}")
+    logger.info("nginx configuration written to %s", cfg)
+    logger.info("Serving results on http://localhost:%s", args.port)
     start_nginx(cfg)
 
 
