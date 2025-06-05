@@ -12,3 +12,11 @@ def test_parse_args_defaults(monkeypatch):
     args = cav.parse_args()
     assert args.output_dir == str(cav.DEFAULT_RESULTS_DIR)
     assert args.port == cav.DEFAULT_NGINX_PORT
+    assert args.hosts is None
+
+
+def test_parse_args_hosts(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "--hosts", "a,b"])
+    args = cav.parse_args()
+    assert args.hosts == ["a", "b"]
+

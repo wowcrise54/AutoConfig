@@ -1,8 +1,6 @@
 import sys
 from pathlib import Path
 import json
-import io
-import builtins
 import subprocess
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -27,21 +25,14 @@ def test_collect_local_adds_net_and_sensors(tmp_path, monkeypatch):
             return "mem\n"
         elif cmd == ["cat", "/proc/loadavg"]:
             return "0\n"
+        elif cmd == ["cat", "/proc/net/dev"]:
+            return "\n".join(sample_net) + "\n"
         elif cmd == ["sensors"]:
             return "\n".join(sample_sensors) + "\n"
         else:
             raise FileNotFoundError
 
     monkeypatch.setattr(subprocess, "check_output", fake_check_output)
-
-    original_open = builtins.open
-
-    def fake_open(path, mode="r", *args, **kwargs):
-        if path == "/proc/net/dev" and "r" in mode:
-            return io.StringIO("\n".join(sample_net))
-        return original_open(path, mode, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "open", fake_open)
 
     original_dir = cav.RESULTS_DIR
     cav.RESULTS_DIR = tmp_path
