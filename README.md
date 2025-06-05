@@ -71,6 +71,20 @@ the `LOG_LEVEL` environment variable to change verbosity, for example:
 LOG_LEVEL=DEBUG python3 scripts/collect_and_visualize.py
 ```
 
+### API Token
+Set the `API_TOKEN` environment variable to protect the `/api/hosts` endpoint.
+Requests must include an `Authorization` header with the same token:
+
+```bash
+API_TOKEN=secret python3 server.py
+```
+
+Example request:
+
+```bash
+curl -H "Authorization: Bearer secret" http://localhost:5000/api/hosts
+```
+
 ## Tests
 Install development dependencies and run the unit tests with `pytest`:
 

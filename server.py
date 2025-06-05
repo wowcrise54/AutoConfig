@@ -9,6 +9,9 @@ level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(level=getattr(logging, level_name, logging.INFO))
 logger = logging.getLogger(__name__)
 
+# Authentication token for API requests
+API_TOKEN = os.environ.get("API_TOKEN")
+
 BASE_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = BASE_DIR / "results"
 DB_PATH = RESULTS_DIR / "data.db"
@@ -76,6 +79,9 @@ def get_hosts(search=None, sort=None, order="asc"):
 
 @app.route("/api/hosts")
 def hosts():
+    auth = request.headers.get("Authorization", "")
+    if auth != f"Bearer {API_TOKEN}":
+        return "", 401
     search = request.args.get("search")
     sort = request.args.get("sort")
     order = request.args.get("order", "asc")
