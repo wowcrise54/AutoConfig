@@ -77,6 +77,7 @@ Install development dependencies and run the unit tests with `pytest`:
 ```bash
 pip install -r requirements.txt
 pytest
+# or simply run `pytest -v` from the project root
 ```
 
 The CI workflow located in `.github/workflows/ci.yml` automatically executes
