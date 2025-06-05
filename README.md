@@ -26,7 +26,9 @@ pip3 install -r requirements.txt
 ## Usage
 Run the helper script which will invoke the playbook, generate a small React
 site in the `results` directory and launch a local nginx server to serve it
-remotely:
+remotely. If `ansible-playbook` is not available the script will collect facts
+from the local machine only so it can be used for quick testing without a full
+Ansible setup:
 
 ```bash
 python3 scripts/collect_and_visualize.py
@@ -46,4 +48,5 @@ python3 server.py
 ```
 
 The API listens on port 5000 by default and serves host data from the
-`results` directory using a lightweight SQLite database.
+`results` directory using a lightweight SQLite database. Be sure to run the
+helper script at least once so that the `results` directory is populated.
