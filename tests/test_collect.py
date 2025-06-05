@@ -3,8 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from scripts import collect_and_visualize as cav
-import sys
+from autoconfig import collect_and_visualize as cav
 
 
 def test_parse_args_defaults(monkeypatch):

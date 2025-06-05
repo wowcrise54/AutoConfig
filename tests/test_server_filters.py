@@ -5,7 +5,7 @@ import sqlite3
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-import server
+from autoconfig import server
 
 
 def _prepare_db(tmp_path):

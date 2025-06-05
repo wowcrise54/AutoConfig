@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 # Authentication token for API requests
 API_TOKEN = os.environ.get("API_TOKEN")
 
-BASE_DIR = Path(__file__).resolve().parent
+# ``server.py`` now lives inside the ``autoconfig`` package. ``BASE_DIR``
+# should therefore point to the project root to keep the default ``results``
+# directory unchanged.
+BASE_DIR = Path(__file__).resolve().parent.parent
 RESULTS_DIR = BASE_DIR / "results"
 DB_PATH = RESULTS_DIR / "data.db"
 DATA_JSON = RESULTS_DIR / "data.json"

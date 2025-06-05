@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-import server
+from autoconfig import server
 from flask import Flask
 
 
