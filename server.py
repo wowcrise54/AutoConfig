@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from pathlib import Path
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request
 import os
 import logging
 
@@ -42,25 +42,44 @@ def load_data():
             )
 
 
-def get_hosts(search=None):
+def get_hosts(search=None, sort=None, order="asc"):
+    """Return hosts filtered by search and ordered via SQL."""
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
+
+        query = "SELECT data FROM hosts"
+        params = []
         if search:
-            cur.execute(
-                "SELECT data FROM hosts WHERE hostname LIKE ?",
-                (f"%{search}%",),
-            )
-        else:
-            cur.execute("SELECT data FROM hosts")
+            query += " WHERE hostname LIKE ?"
+            params.append(f"%{search}%")
+
+        if sort:
+            allowed = {"hostname", "cpu_load", "memory", "disk"}
+            if sort == "hostname":
+                order_field = "hostname"
+            elif sort in allowed:
+                order_field = f"json_extract(data, '$.{sort}')"
+            else:
+                order_field = "hostname"
+
+            query += f" ORDER BY {order_field}"
+            if order and order.lower() == "desc":
+                query += " DESC"
+            else:
+                query += " ASC"
+
+        cur.execute(query, params)
         rows = cur.fetchall()
+
     return [json.loads(r[0]) for r in rows]
 
 
 @app.route('/api/hosts')
 def hosts():
-    search = None
-    # In a real app we would parse request.args for filters and sorting
-    hosts_list = get_hosts(search)
+    search = request.args.get("search")
+    sort = request.args.get("sort")
+    order = request.args.get("order", "asc")
+    hosts_list = get_hosts(search=search, sort=sort, order=order)
     return jsonify(hosts_list)
 
 
