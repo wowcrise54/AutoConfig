@@ -33,7 +33,17 @@ python3 scripts/collect_and_visualize.py
 ```
 
 After the script completes, visit `http://localhost:8080` to view the collected
-information. The page will load `data.json` from the same directory and display
-the facts using React. The interface is styled with the Bootstrap framework for
-a clean tabular layout.
-The nginx configuration file is written to `results/nginx.conf`.
+information. The page now loads host information via a small Flask API instead
+of reading a static JSON file. The React interface supports searching, sorting
+by columns and filtering by CPU load. Data refreshes automatically every
+30&nbsp;seconds without reloading the page. The nginx configuration file is
+written to `results/nginx.conf`.
+
+Alternatively you can run the API directly using:
+
+```bash
+python3 server.py
+```
+
+The API listens on port 5000 by default and serves host data from the
+`results` directory using a lightweight SQLite database.
