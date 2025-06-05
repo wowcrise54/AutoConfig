@@ -2,6 +2,7 @@
 import json
 import os
 import subprocess
+import sqlite3
 from pathlib import Path
 from jinja2 import Template
 
@@ -13,6 +14,7 @@ NGINX_CONFIG = RESULTS_DIR / "nginx.conf"
 TEMPLATES_DIR = BASE_DIR / ".." / "templates"
 HTML_TEMPLATE_PATH = TEMPLATES_DIR / "index.html.j2"
 NGINX_TEMPLATE_PATH = TEMPLATES_DIR / "nginx.conf.j2"
+DB_PATH = RESULTS_DIR / "data.db"
 
 PLAYBOOK = BASE_DIR / ".." / "ansible" / "collect_facts.yml"
 INVENTORY = BASE_DIR / ".." / "ansible" / "hosts.ini"
@@ -38,6 +40,23 @@ def load_results():
     return hosts
 
 
+def save_to_db(hosts):
+    """Store hosts data in a small SQLite database for the API."""
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS hosts (hostname TEXT PRIMARY KEY, data TEXT)"
+    )
+    cur.execute("DELETE FROM hosts")
+    for h in hosts:
+        cur.execute(
+            "INSERT OR REPLACE INTO hosts(hostname, data) VALUES(?, ?)",
+            (h.get("hostname"), json.dumps(h)),
+        )
+    conn.commit()
+    conn.close()
+
+
 with open(HTML_TEMPLATE_PATH, "r") as f:
     HTML_TEMPLATE = Template(f.read())
 
@@ -55,6 +74,8 @@ def generate_site(hosts):
     data_file = RESULTS_DIR / "data.json"
     with open(data_file, "w") as f:
         json.dump(hosts, f, indent=2)
+
+    save_to_db(hosts)
 
     print(f"Report written to {output_file}")
 
