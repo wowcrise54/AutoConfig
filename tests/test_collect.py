@@ -19,4 +19,3 @@ def test_parse_args_hosts(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["prog", "--hosts", "a,b"])
     args = cav.parse_args()
     assert args.hosts == ["a", "b"]
-

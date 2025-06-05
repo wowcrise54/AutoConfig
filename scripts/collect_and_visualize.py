@@ -78,7 +78,9 @@ def collect_local_facts(host=None):
         ports = run_cmd(["ss", "-tulwn"]).splitlines()
     except FileNotFoundError:
         ports = []
-    disk = run_cmd("df -h --output=size,used,avail,pcent / | tail -n 1", shell=True).strip()
+    disk = run_cmd(
+        "df -h --output=size,used,avail,pcent / | tail -n 1", shell=True
+    ).strip()
     memory = run_cmd("free -m | grep 'Mem:'", shell=True).strip()
     cpu_load = run_cmd(["cat", "/proc/loadavg"]).strip()
 
