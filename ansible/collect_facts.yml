@@ -30,6 +30,15 @@
       command: cat /proc/loadavg
       register: cpu_load
 
+    - name: Get network stats
+      command: cat /proc/net/dev
+      register: net_stats
+
+    - name: Get temperature sensors
+      command: sensors
+      register: sensor_data
+      ignore_errors: yes
+
     - name: Save facts to JSON
       copy:
         dest: "{{ output_dir }}/facts_{{ inventory_hostname }}.json"
@@ -40,6 +49,8 @@
             "ports": {{ port_list.stdout_lines | to_json }},
             "disk": {{ disk_usage.stdout | to_json }},
             "memory": {{ memory_info.stdout | to_json }},
-            "cpu_load": {{ cpu_load.stdout | to_json }}
+            "cpu_load": {{ cpu_load.stdout | to_json }},
+            "net": {{ net_stats.stdout_lines | to_json }},
+            "sensors": {{ sensor_data.stdout_lines | to_json }}
           }
       delegate_to: localhost

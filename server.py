@@ -54,7 +54,7 @@ def get_hosts(search=None, sort=None, order="asc"):
             params.append(f"%{search}%")
 
         if sort:
-            allowed = {"hostname", "cpu_load", "memory", "disk"}
+            allowed = {"hostname", "cpu_load", "memory", "disk", "net", "sensors"}
             if sort == "hostname":
                 order_field = "hostname"
             elif sort in allowed:

@@ -155,6 +155,8 @@
                     <th onClick={() => handleSort('disk')}>Disk</th>
                     <th>Users</th>
                     <th>Listening Ports</th>
+                    <th>Network</th>
+                    <th>Sensors</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -169,6 +171,12 @@
                       </td>
                       <td>
                         <ul class="mb-0">{h.ports.map((p, j) => <li key={j}>{p}</li>)}</ul>
+                      </td>
+                      <td>
+                        <ul class="mb-0">{h.net.map((n, j) => <li key={j}>{n}</li>)}</ul>
+                      </td>
+                      <td>
+                        <ul class="mb-0">{h.sensors.map((s, j) => <li key={j}>{s}</li>)}</ul>
                       </td>
                     </tr>
                   ))}
