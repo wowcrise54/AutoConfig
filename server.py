@@ -13,13 +13,11 @@ app = Flask(__name__)
 
 def init_db():
     DB_PATH.parent.mkdir(exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS hosts (hostname TEXT PRIMARY KEY, data TEXT)"
-    )
-    conn.commit()
-    conn.close()
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS hosts (hostname TEXT PRIMARY KEY, data TEXT)"
+        )
 
 
 def load_data():
@@ -28,30 +26,27 @@ def load_data():
             hosts = json.load(f)
     else:
         hosts = []
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("DELETE FROM hosts")
-    for h in hosts:
-        cur.execute(
-            "INSERT OR REPLACE INTO hosts(hostname, data) VALUES(?, ?)",
-            (h.get("hostname"), json.dumps(h)),
-        )
-    conn.commit()
-    conn.close()
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM hosts")
+        for h in hosts:
+            cur.execute(
+                "INSERT OR REPLACE INTO hosts(hostname, data) VALUES(?, ?)",
+                (h.get("hostname"), json.dumps(h)),
+            )
 
 
 def get_hosts(search=None):
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    if search:
-        cur.execute(
-            "SELECT data FROM hosts WHERE hostname LIKE ?",
-            (f"%{search}%",),
-        )
-    else:
-        cur.execute("SELECT data FROM hosts")
-    rows = cur.fetchall()
-    conn.close()
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.cursor()
+        if search:
+            cur.execute(
+                "SELECT data FROM hosts WHERE hostname LIKE ?",
+                (f"%{search}%",),
+            )
+        else:
+            cur.execute("SELECT data FROM hosts")
+        rows = cur.fetchall()
     return [json.loads(r[0]) for r in rows]
 
 
