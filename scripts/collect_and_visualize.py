@@ -81,19 +81,17 @@ def load_results():
 
 def save_to_db(hosts):
     """Store hosts data in a small SQLite database for the API."""
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS hosts (hostname TEXT PRIMARY KEY, data TEXT)"
-    )
-    cur.execute("DELETE FROM hosts")
-    for h in hosts:
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.cursor()
         cur.execute(
-            "INSERT OR REPLACE INTO hosts(hostname, data) VALUES(?, ?)",
-            (h.get("hostname"), json.dumps(h)),
+            "CREATE TABLE IF NOT EXISTS hosts (hostname TEXT PRIMARY KEY, data TEXT)"
         )
-    conn.commit()
-    conn.close()
+        cur.execute("DELETE FROM hosts")
+        for h in hosts:
+            cur.execute(
+                "INSERT OR REPLACE INTO hosts(hostname, data) VALUES(?, ?)",
+                (h.get("hostname"), json.dumps(h)),
+            )
 
 
 with open(HTML_TEMPLATE_PATH, "r") as f:
