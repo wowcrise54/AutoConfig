@@ -114,6 +114,13 @@ Start both services with:
 docker-compose up --build
 ```
 
+Alternatively you can run the helper script `run_local.sh` which collects
+the host data and launches the compose stack in one step:
+
+```bash
+./run_local.sh
+```
+
 The site will be available on [http://localhost:8080](http://localhost:8080).
 
 ### Publishing the image
