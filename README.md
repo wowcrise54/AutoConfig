@@ -54,6 +54,14 @@ The API listens on port 5000 by default and serves host data from the
 `results` directory using a lightweight SQLite database. Be sure to run the
 helper script at least once so that the `results` directory is populated.
 
+### Logging
+Both the helper script and the Flask API use Python's `logging` module. Set
+the `LOG_LEVEL` environment variable to change verbosity, for example:
+
+```bash
+LOG_LEVEL=DEBUG python3 scripts/collect_and_visualize.py
+```
+
 ## Docker
 
 Build the image:

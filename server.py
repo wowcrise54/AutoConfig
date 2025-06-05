@@ -2,6 +2,12 @@ import json
 import sqlite3
 from pathlib import Path
 from flask import Flask, jsonify, send_from_directory
+import os
+import logging
+
+level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, level_name, logging.INFO))
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = BASE_DIR / 'results'
@@ -69,4 +75,5 @@ def index():
 if __name__ == '__main__':
     init_db()
     load_data()
+    logger.info('Starting Flask server on port %s', 5000)
     app.run(host='0.0.0.0', port=5000)
