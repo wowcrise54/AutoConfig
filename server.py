@@ -10,9 +10,9 @@ logging.basicConfig(level=getattr(logging, level_name, logging.INFO))
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
-RESULTS_DIR = BASE_DIR / 'results'
-DB_PATH = RESULTS_DIR / 'data.db'
-DATA_JSON = RESULTS_DIR / 'data.json'
+RESULTS_DIR = BASE_DIR / "results"
+DB_PATH = RESULTS_DIR / "data.db"
+DATA_JSON = RESULTS_DIR / "data.json"
 
 app = Flask(__name__)
 
@@ -74,7 +74,7 @@ def get_hosts(search=None, sort=None, order="asc"):
     return [json.loads(r[0]) for r in rows]
 
 
-@app.route('/api/hosts')
+@app.route("/api/hosts")
 def hosts():
     search = request.args.get("search")
     sort = request.args.get("sort")
@@ -83,16 +83,16 @@ def hosts():
     return jsonify(hosts_list)
 
 
-@app.route('/')
+@app.route("/")
 def index():
-    index_file = RESULTS_DIR / 'index.html'
+    index_file = RESULTS_DIR / "index.html"
     if index_file.exists():
-        return send_from_directory(RESULTS_DIR, 'index.html')
-    return 'Flask server is running. Use /api/hosts to get data.'
+        return send_from_directory(RESULTS_DIR, "index.html")
+    return "Flask server is running. Use /api/hosts to get data."
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     init_db()
     load_data()
-    logger.info('Starting Flask server on port %s', 5000)
-    app.run(host='0.0.0.0', port=5000)
+    logger.info("Starting Flask server on port %s", 5000)
+    app.run(host="0.0.0.0", port=5000)

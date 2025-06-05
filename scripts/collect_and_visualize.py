@@ -38,12 +38,11 @@ def run_playbook():
     if shutil.which("ansible-playbook"):
         env = os.environ.copy()
         env["OUTPUT_DIR"] = str(RESULTS_DIR)
-        subprocess.run([
-            "ansible-playbook",
-            "-i",
-            str(INVENTORY),
-            str(PLAYBOOK)
-        ], check=True, env=env)
+        subprocess.run(
+            ["ansible-playbook", "-i", str(INVENTORY), str(PLAYBOOK)],
+            check=True,
+            env=env,
+        )
     else:
         logger.info("ansible-playbook not found, collecting local facts only")
         collect_local_facts()
@@ -181,17 +180,22 @@ def generate_nginx_config(port=DEFAULT_NGINX_PORT):
 def start_nginx(config_path):
     """Start nginx using the generated config if available."""
     try:
-        subprocess.run([
-            "nginx",
-            "-c",
-            str(config_path),
-            "-p",
-            str(RESULTS_DIR),
-            "-g",
-            "daemon off;",
-        ], check=True)
+        subprocess.run(
+            [
+                "nginx",
+                "-c",
+                str(config_path),
+                "-p",
+                str(RESULTS_DIR),
+                "-g",
+                "daemon off;",
+            ],
+            check=True,
+        )
     except FileNotFoundError:
-        logger.warning("nginx is not installed. Please install nginx to serve the site.")
+        logger.warning(
+            "nginx is not installed. Please install nginx to serve the site."
+        )
 
 
 def main():
