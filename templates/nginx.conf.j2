@@ -1,7 +1,8 @@
 events {}
 http {
     server {
-        listen {{ port }};
+        listen {{ port }} default_server;
+        listen [::]:{{ port }} default_server;
         server_name _;
         root {{ root }};
         location / {
