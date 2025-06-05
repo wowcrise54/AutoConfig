@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from pathlib import Path
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 
 BASE_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = BASE_DIR / 'results'
@@ -61,6 +61,14 @@ def hosts():
     # In a real app we would parse request.args for filters and sorting
     hosts_list = get_hosts(search)
     return jsonify(hosts_list)
+
+
+@app.route('/')
+def index():
+    index_file = RESULTS_DIR / 'index.html'
+    if index_file.exists():
+        return send_from_directory(RESULTS_DIR, 'index.html')
+    return 'Flask server is running. Use /api/hosts to get data.'
 
 
 if __name__ == '__main__':
