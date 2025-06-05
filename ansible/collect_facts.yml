@@ -19,11 +19,11 @@
       register: port_list
 
     - name: Get disk usage
-      command: df -h --output=size,used,avail,pcent / | tail -n 1
+      shell: df -h --output=size,used,avail,pcent / | tail -n 1
       register: disk_usage
 
     - name: Get memory info
-      command: free -m | grep Mem:
+      shell: free -m | grep 'Mem:'
       register: memory_info
 
     - name: Get CPU load
