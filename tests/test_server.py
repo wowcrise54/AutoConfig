@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import server
@@ -11,7 +12,7 @@ def test_index_without_file(tmp_path):
     server.RESULTS_DIR = tmp_path
     app: Flask = server.app
     with app.test_client() as client:
-        resp = client.get('/')
+        resp = client.get("/")
         assert resp.status_code == 200
-        assert b'Flask server is running' in resp.data
+        assert b"Flask server is running" in resp.data
     server.RESULTS_DIR = original_dir
