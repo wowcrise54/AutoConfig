@@ -146,6 +146,11 @@ def parse_args():
         default=DEFAULT_NGINX_PORT,
         help="port for the temporary nginx server",
     )
+    parser.add_argument(
+        "--skip-nginx",
+        action="store_true",
+        help="collect data only and do not launch nginx",
+    )
     return parser.parse_args()
 
 
@@ -204,6 +209,9 @@ def main():
     generate_site(hosts)
     cfg = generate_nginx_config(port=args.port)
     logger.info("nginx configuration written to %s", cfg)
+    if args.skip_nginx:
+        logger.info("Skipping nginx startup")
+        return
     logger.info("Serving results on http://localhost:%s", args.port)
     start_nginx(cfg)
 
