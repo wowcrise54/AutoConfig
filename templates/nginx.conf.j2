@@ -1,0 +1,11 @@
+events {}
+http {
+    server {
+        listen {{ port }};
+        server_name _;
+        root {{ root }};
+        location / {
+            try_files $uri $uri/ =404;
+        }
+    }
+}
