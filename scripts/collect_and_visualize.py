@@ -6,19 +6,26 @@ import sqlite3
 import shutil
 from pathlib import Path
 from jinja2 import Template
+import argparse
 
-NGINX_PORT = 8080
+DEFAULT_NGINX_PORT = 8080
 
 BASE_DIR = Path(__file__).resolve().parent
-RESULTS_DIR = BASE_DIR.parent / "results"
-NGINX_CONFIG = RESULTS_DIR / "nginx.conf"
+DEFAULT_RESULTS_DIR = BASE_DIR.parent / "results"
+DEFAULT_NGINX_CONFIG = DEFAULT_RESULTS_DIR / "nginx.conf"
 TEMPLATES_DIR = BASE_DIR / ".." / "templates"
 HTML_TEMPLATE_PATH = TEMPLATES_DIR / "index.html.j2"
 NGINX_TEMPLATE_PATH = TEMPLATES_DIR / "nginx.conf.j2"
-DB_PATH = RESULTS_DIR / "data.db"
+DEFAULT_DB_PATH = DEFAULT_RESULTS_DIR / "data.db"
+DEFAULT_INVENTORY = BASE_DIR / ".." / "ansible" / "hosts.ini"
+
+# These variables may be overridden by command line options
+RESULTS_DIR = DEFAULT_RESULTS_DIR
+NGINX_CONFIG = DEFAULT_NGINX_CONFIG
+DB_PATH = DEFAULT_DB_PATH
+INVENTORY = DEFAULT_INVENTORY
 
 PLAYBOOK = BASE_DIR / ".." / "ansible" / "collect_facts.yml"
-INVENTORY = BASE_DIR / ".." / "ansible" / "hosts.ini"
 
 
 def run_playbook():
@@ -101,6 +108,32 @@ with open(NGINX_TEMPLATE_PATH, "r") as f:
     NGINX_TEMPLATE = Template(f.read())
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Collect system facts and serve a small report"
+    )
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        default=str(DEFAULT_RESULTS_DIR),
+        help="directory to store collected results",
+    )
+    parser.add_argument(
+        "-i",
+        "--inventory",
+        default=str(DEFAULT_INVENTORY),
+        help="path to Ansible inventory file",
+    )
+    parser.add_argument(
+        "-p",
+        "--port",
+        type=int,
+        default=DEFAULT_NGINX_PORT,
+        help="port for the temporary nginx server",
+    )
+    return parser.parse_args()
+
+
 def generate_site(hosts):
     """Generate the React web site and JSON data."""
     html = HTML_TEMPLATE.render()
@@ -117,7 +150,7 @@ def generate_site(hosts):
     print(f"Report written to {output_file}")
 
 
-def generate_nginx_config(port=NGINX_PORT):
+def generate_nginx_config(port=DEFAULT_NGINX_PORT):
     """Create an nginx config to serve the results directory."""
     config_text = NGINX_TEMPLATE.render(port=port, root=RESULTS_DIR)
     with open(NGINX_CONFIG, "w") as f:
@@ -141,12 +174,24 @@ def start_nginx(config_path):
         print("nginx is not installed. Please install nginx to serve the site.")
 
 
-if __name__ == "__main__":
+def main():
+    args = parse_args()
+
+    global RESULTS_DIR, DB_PATH, NGINX_CONFIG, INVENTORY
+    RESULTS_DIR = Path(args.output_dir)
+    INVENTORY = Path(args.inventory)
+    DB_PATH = RESULTS_DIR / "data.db"
+    NGINX_CONFIG = RESULTS_DIR / "nginx.conf"
+
     RESULTS_DIR.mkdir(exist_ok=True)
     run_playbook()
     hosts = load_results()
     generate_site(hosts)
-    cfg = generate_nginx_config()
+    cfg = generate_nginx_config(port=args.port)
     print(f"nginx configuration written to {cfg}")
-    print(f"Serving results on http://localhost:{NGINX_PORT}")
+    print(f"Serving results on http://localhost:{args.port}")
     start_nginx(cfg)
+
+
+if __name__ == "__main__":
+    main()
