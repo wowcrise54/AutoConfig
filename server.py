@@ -31,6 +31,7 @@ def init_db():
 
 
 def load_data():
+    """Load hosts from ``DATA_JSON`` into the SQLite database."""
     if DATA_JSON.exists():
         with open(DATA_JSON) as f:
             hosts = json.load(f)
@@ -90,12 +91,25 @@ def hosts():
     return jsonify(hosts_list)
 
 
+@app.route("/api/reload", methods=["POST"])
+def reload_data_endpoint():
+    """Reload host information from ``DATA_JSON``. Requires API token."""
+    auth = request.headers.get("Authorization", "")
+    if auth != f"Bearer {API_TOKEN}":
+        return "", 401
+    load_data()
+    return jsonify({"status": "reloaded"})
+
+
 @app.route("/")
 def index():
     index_file = RESULTS_DIR / "index.html"
     if index_file.exists():
         return send_from_directory(RESULTS_DIR, "index.html")
-    return "Flask server is running. Use /api/hosts to get data."
+    return (
+        "Flask server is running. Use /api/hosts to get data. "
+        "POST /api/reload to refresh."
+    )
 
 
 if __name__ == "__main__":

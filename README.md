@@ -72,17 +72,25 @@ LOG_LEVEL=DEBUG python3 scripts/collect_and_visualize.py
 ```
 
 ### API Token
-Set the `API_TOKEN` environment variable to protect the `/api/hosts` endpoint.
-Requests must include an `Authorization` header with the same token:
+Set the `API_TOKEN` environment variable to protect the `/api/hosts` and
+`/api/reload` endpoints. Requests must include an `Authorization` header with
+the same token:
 
 ```bash
 API_TOKEN=secret python3 server.py
 ```
 
-Example request:
+Example request for listing hosts:
 
 ```bash
 curl -H "Authorization: Bearer secret" http://localhost:5000/api/hosts
+```
+
+Reload the database after running the helper script:
+
+```bash
+curl -X POST -H "Authorization: Bearer secret" \
+     http://localhost:5000/api/reload
 ```
 
 ## Tests
