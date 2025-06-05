@@ -8,17 +8,22 @@ Python helper script located in the `scripts/` directory runs the playbook and
 generates a web page using templates stored in `templates/`.
 
 ## Requirements
-- Python 3
+- Python 3.11
 - Ansible
 - Jinja2 (installed automatically with Ansible)
+- Flask
+- pytest (for running the tests)
+- docker and docker-compose
 - nginx (optional, installed automatically by `setup.sh`)
 - See `requirements.txt` for the full Python dependencies
 
 ## Setup
-Run the provided helper script to automatically install the necessary packages
-and Python requirements:
+Run the provided helper script to automatically install the system packages and
+Python requirements. It is recommended to create a virtual environment first:
 
 ```bash
+python3 -m venv venv
+source venv/bin/activate
 ./setup.sh
 pip3 install -r requirements.txt
 ```
@@ -62,6 +67,17 @@ the `LOG_LEVEL` environment variable to change verbosity, for example:
 LOG_LEVEL=DEBUG python3 scripts/collect_and_visualize.py
 ```
 
+## Tests
+Install development dependencies and run the unit tests with `pytest`:
+
+```bash
+pip install -r requirements.txt
+pytest
+```
+
+The CI workflow located in `.github/workflows/ci.yml` automatically executes
+these tests on every push and pull request.
+
 ## Docker
 
 Build the image:
@@ -88,11 +104,26 @@ docker run -p 5000:5000 -v $(pwd)/results:/app/results autocfg
 ### Using docker-compose
 
 A sample `docker-compose.yml` is provided to launch the Flask API together with
-an nginx container that serves the static site and proxies API requests. Start
-both services with:
+an nginx container that serves the static site and proxies API requests. The
+`flask` service is built from the local `Dockerfile` and shares the `results`
+directory with the `nginx` container.
+
+Start both services with:
 
 ```bash
 docker-compose up --build
 ```
 
 The site will be available on [http://localhost:8080](http://localhost:8080).
+
+### Publishing the image
+
+To publish the API image to a registry like Docker Hub run:
+
+```bash
+docker build -t yourname/autocfg:latest .
+docker push yourname/autocfg:latest
+```
+
+The compose file can then reference the pushed tag instead of building the
+image locally.
