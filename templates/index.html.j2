@@ -11,8 +11,13 @@
 <body>
     <div class="container my-4" id="root"></div>
     <script type="text/babel">
-    function fetchData() {
-      return fetch('/api/hosts').then(r => r.json());
+    function fetchData(search, sort, order) {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (sort) params.set('sort', sort);
+      if (order) params.set('order', order);
+      const url = '/api/hosts?' + params.toString();
+      return fetch(url).then(r => r.json());
     }
 
     function App() {
@@ -23,8 +28,8 @@
       const [sortDir, setSortDir] = React.useState('asc');
 
       const load = React.useCallback(() => {
-        fetchData().then(setData);
-      }, []);
+        fetchData(search, sortKey, sortDir).then(setData);
+      }, [search, sortKey, sortDir]);
 
       React.useEffect(() => {
         load();
@@ -45,14 +50,7 @@
         .filter(h => h.hostname.toLowerCase().includes(search.toLowerCase()))
         .filter(h =>
           cpuFilter ? parseFloat(h.cpu_load) <= parseFloat(cpuFilter) : true
-        )
-        .sort((a, b) => {
-          const valA = a[sortKey];
-          const valB = b[sortKey];
-          if (valA < valB) return sortDir === 'asc' ? -1 : 1;
-          if (valA > valB) return sortDir === 'asc' ? 1 : -1;
-          return 0;
-        });
+        );
 
       return (
         <div>
