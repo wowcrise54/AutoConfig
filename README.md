@@ -10,6 +10,7 @@ web page that displays the results.
 - Python 3
 - Ansible
 - Jinja2 (installed automatically with Ansible)
+- nginx (optional, installed automatically by `setup.sh`)
 
 ## Setup
 Run the provided helper script to automatically install the necessary packages:
@@ -19,13 +20,15 @@ Run the provided helper script to automatically install the necessary packages:
 ```
 
 ## Usage
-Run the helper script which will invoke the playbook and generate a small React
-site in the `results` directory:
+Run the helper script which will invoke the playbook, generate a small React
+site in the `results` directory and launch a local nginx server to serve it
+remotely:
 
 ```bash
 python3 collect_and_visualize.py
 ```
 
-Open `results/index.html` in a browser to view the collected information. The
-page will load `data.json` from the same directory and display the facts using
-React.
+After the script completes, visit `http://localhost:8080` to view the collected
+information. The page will load `data.json` from the same directory and display
+the facts using React.
+The nginx configuration file is written to `results/nginx.conf`.

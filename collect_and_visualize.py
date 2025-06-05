@@ -5,8 +5,11 @@ import subprocess
 from pathlib import Path
 from jinja2 import Template
 
+NGINX_PORT = 8080
+
 BASE_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = BASE_DIR / "results"
+NGINX_CONFIG = RESULTS_DIR / "nginx.conf"
 
 PLAYBOOK = BASE_DIR / "ansible" / "collect_facts.yml"
 INVENTORY = BASE_DIR / "ansible" / "hosts.ini"
@@ -88,6 +91,22 @@ HTML_TEMPLATE = Template(
     """
 )
 
+NGINX_TEMPLATE = Template(
+    """
+events {}
+http {
+    server {
+        listen {{ port }};
+        server_name _;
+        root {{ root }};
+        location / {
+            try_files $uri $uri/ =404;
+        }
+    }
+}
+    """
+)
+
 
 def generate_site(hosts):
     """Generate the React web site and JSON data."""
@@ -103,8 +122,36 @@ def generate_site(hosts):
     print(f"Report written to {output_file}")
 
 
+def generate_nginx_config(port=NGINX_PORT):
+    """Create an nginx config to serve the results directory."""
+    config_text = NGINX_TEMPLATE.render(port=port, root=RESULTS_DIR)
+    with open(NGINX_CONFIG, "w") as f:
+        f.write(config_text)
+    return NGINX_CONFIG
+
+
+def start_nginx(config_path):
+    """Start nginx using the generated config if available."""
+    try:
+        subprocess.run([
+            "nginx",
+            "-c",
+            str(config_path),
+            "-p",
+            str(RESULTS_DIR),
+            "-g",
+            "daemon off;",
+        ], check=True)
+    except FileNotFoundError:
+        print("nginx is not installed. Please install nginx to serve the site.")
+
+
 if __name__ == "__main__":
     RESULTS_DIR.mkdir(exist_ok=True)
     run_playbook()
     hosts = load_results()
     generate_site(hosts)
+    cfg = generate_nginx_config()
+    print(f"nginx configuration written to {cfg}")
+    print(f"Serving results on http://localhost:{NGINX_PORT}")
+    start_nginx(cfg)
