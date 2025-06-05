@@ -2,7 +2,7 @@
 # Collect host data and launch the application using docker-compose
 set -e
 
-python3 scripts/collect_and_visualize.py \
+python3 -m autoconfig.collect_and_visualize \
   --output-dir results \
   --inventory ansible/hosts.ini \
   --skip-nginx
