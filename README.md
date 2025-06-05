@@ -46,6 +46,19 @@ python3 scripts/collect_and_visualize.py \
   --port 8080
 ```
 
+To execute the playbook for specific hosts in parallel you can pass them via
+`--hosts`:
+
+```bash
+python3 scripts/collect_and_visualize.py \
+  --inventory ansible/hosts.ini \
+  --hosts host1,host2 \
+  --output-dir results
+```
+
+If Ansible is not installed the same option will collect facts over SSH for each
+listed host concurrently.
+
 After the script completes, visit `http://localhost:8080` to view the collected
 information. The page now loads host information via a small Flask API instead
 of reading a static JSON file. The React interface supports searching, sorting

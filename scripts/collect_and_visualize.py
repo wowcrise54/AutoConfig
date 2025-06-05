@@ -8,6 +8,7 @@ from pathlib import Path
 from jinja2 import Template
 import argparse
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(level=getattr(logging, level_name, logging.INFO))
@@ -33,46 +34,60 @@ INVENTORY = DEFAULT_INVENTORY
 PLAYBOOK = BASE_DIR / ".." / "ansible" / "collect_facts.yml"
 
 
-def run_playbook():
+def run_playbook(hosts=None):
     """Run the Ansible playbook if available or collect facts locally."""
     if shutil.which("ansible-playbook"):
         env = os.environ.copy()
         env["OUTPUT_DIR"] = str(RESULTS_DIR)
-        subprocess.run(
-            ["ansible-playbook", "-i", str(INVENTORY), str(PLAYBOOK)],
-            check=True,
-            env=env,
-        )
+
+        def run_host(host):
+            cmd = ["ansible-playbook", "-i", str(INVENTORY), str(PLAYBOOK)]
+            if host:
+                cmd.extend(["--limit", host])
+            subprocess.run(cmd, check=True, env=env)
+
+        if hosts:
+            with ThreadPoolExecutor() as exc:
+                exc.map(run_host, hosts)
+        else:
+            run_host(None)
     else:
         logger.info("ansible-playbook not found, collecting local facts only")
-        collect_local_facts()
+        if hosts:
+            with ThreadPoolExecutor() as exc:
+                exc.map(collect_local_facts, hosts)
+        else:
+            collect_local_facts()
 
 
-def collect_local_facts():
-    """Collect basic host facts without Ansible."""
-    hostname = subprocess.check_output(["hostname"], text=True).strip()
-    users = subprocess.check_output(["getent", "passwd"], text=True).splitlines()
+def collect_local_facts(host=None):
+    """Collect basic host facts locally or via SSH."""
+
+    def run_cmd(cmd, shell=False):
+        if host and host != "localhost":
+            if shell:
+                remote_cmd = ["ssh", host, cmd]
+            else:
+                remote_cmd = ["ssh", host] + cmd
+            return subprocess.check_output(remote_cmd, text=True)
+        return subprocess.check_output(cmd, text=True, shell=shell)
+
+    hostname = run_cmd(["hostname"]).strip()
+    users = run_cmd(["getent", "passwd"]).splitlines()
     try:
-        ports = subprocess.check_output(["ss", "-tulwn"], text=True).splitlines()
+        ports = run_cmd(["ss", "-tulwn"]).splitlines()
     except FileNotFoundError:
         ports = []
-    disk = subprocess.check_output(
-        "df -h --output=size,used,avail,pcent / | tail -n 1",
-        shell=True,
-        text=True,
+    disk = run_cmd(
+        "df -h --output=size,used,avail,pcent / | tail -n 1", shell=True
     ).strip()
-    memory = subprocess.check_output(
-        "free -m | grep 'Mem:'",
-        shell=True,
-        text=True,
-    ).strip()
-    cpu_load = subprocess.check_output(["cat", "/proc/loadavg"], text=True).strip()
+    memory = run_cmd("free -m | grep 'Mem:'", shell=True).strip()
+    cpu_load = run_cmd(["cat", "/proc/loadavg"]).strip()
 
-    with open("/proc/net/dev", "r") as f:
-        net_stats = f.read().splitlines()
+    net_stats = run_cmd(["cat", "/proc/net/dev"]).splitlines()
 
     try:
-        sensors_out = subprocess.check_output(["sensors"], text=True).splitlines()
+        sensors_out = run_cmd(["sensors"]).splitlines()
     except FileNotFoundError:
         sensors_out = []
 
@@ -150,6 +165,11 @@ def parse_args():
         action="store_true",
         help="collect data only and do not launch nginx",
     )
+    parser.add_argument(
+        "--hosts",
+        type=lambda s: s.split(","),
+        help="comma separated list of hosts to process in parallel",
+    )
     return parser.parse_args()
 
 
@@ -208,7 +228,7 @@ def main():
     NGINX_CONFIG = RESULTS_DIR / "nginx.conf"
 
     RESULTS_DIR.mkdir(exist_ok=True)
-    run_playbook()
+    run_playbook(hosts=args.hosts)
     hosts = load_results()
     generate_site(hosts)
     cfg = generate_nginx_config(port=args.port)
