@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 import json
-import sqlite3
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -44,9 +43,7 @@ def test_reload_invalid_token(tmp_path, monkeypatch):
     originals = _setup(tmp_path, monkeypatch)
     app = server.app
     with app.test_client() as client:
-        resp = client.post(
-            "/api/reload", headers={"Authorization": "Bearer wrong"}
-        )
+        resp = client.post("/api/reload", headers={"Authorization": "Bearer wrong"})
         assert resp.status_code == 401
     _teardown(originals)
 
@@ -55,9 +52,7 @@ def test_reload_valid_token(tmp_path, monkeypatch):
     originals = _setup(tmp_path, monkeypatch)
     app = server.app
     with app.test_client() as client:
-        resp = client.post(
-            "/api/reload", headers={"Authorization": "Bearer secret"}
-        )
+        resp = client.post("/api/reload", headers={"Authorization": "Bearer secret"})
         assert resp.status_code == 200
         assert resp.get_json() == {"status": "reloaded"}
     hosts = server.get_hosts()
