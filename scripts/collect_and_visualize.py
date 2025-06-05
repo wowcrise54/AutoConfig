@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sqlite3
+import shutil
 from pathlib import Path
 from jinja2 import Template
 
@@ -21,14 +22,52 @@ INVENTORY = BASE_DIR / ".." / "ansible" / "hosts.ini"
 
 
 def run_playbook():
-    env = os.environ.copy()
-    env["OUTPUT_DIR"] = str(RESULTS_DIR)
-    subprocess.run([
-        "ansible-playbook",
-        "-i",
-        str(INVENTORY),
-        str(PLAYBOOK)
-    ], check=True, env=env)
+    """Run the Ansible playbook if available or collect facts locally."""
+    if shutil.which("ansible-playbook"):
+        env = os.environ.copy()
+        env["OUTPUT_DIR"] = str(RESULTS_DIR)
+        subprocess.run([
+            "ansible-playbook",
+            "-i",
+            str(INVENTORY),
+            str(PLAYBOOK)
+        ], check=True, env=env)
+    else:
+        print("ansible-playbook not found, collecting local facts only")
+        collect_local_facts()
+
+
+def collect_local_facts():
+    """Collect basic host facts without Ansible."""
+    hostname = subprocess.check_output(["hostname"], text=True).strip()
+    users = subprocess.check_output(["getent", "passwd"], text=True).splitlines()
+    try:
+        ports = subprocess.check_output(["ss", "-tulwn"], text=True).splitlines()
+    except FileNotFoundError:
+        ports = []
+    disk = subprocess.check_output(
+        "df -h --output=size,used,avail,pcent / | tail -n 1",
+        shell=True,
+        text=True,
+    ).strip()
+    memory = subprocess.check_output(
+        "free -m | grep 'Mem:'",
+        shell=True,
+        text=True,
+    ).strip()
+    cpu_load = subprocess.check_output(["cat", "/proc/loadavg"], text=True).strip()
+
+    RESULTS_DIR.mkdir(exist_ok=True)
+    data = {
+        "hostname": hostname,
+        "users": users,
+        "ports": ports,
+        "disk": disk,
+        "memory": memory,
+        "cpu_load": cpu_load,
+    }
+    with open(RESULTS_DIR / f"facts_{hostname}.json", "w") as f:
+        json.dump(data, f, indent=2)
 
 
 def load_results():
