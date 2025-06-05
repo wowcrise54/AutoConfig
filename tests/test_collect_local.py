@@ -5,7 +5,7 @@ import subprocess
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from scripts import collect_and_visualize as cav
+from autoconfig import collect_and_visualize as cav
 
 
 def test_collect_local_adds_net_and_sensors(tmp_path, monkeypatch):

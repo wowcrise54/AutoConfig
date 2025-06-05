@@ -1,0 +1,23 @@
+[project]
+name = "autoconfig"
+version = "0.1.0"
+description = "Collect system facts with Ansible and visualize them"
+authors = [{name = "AutoConfig Developers"}]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ansible",
+    "Jinja2",
+    "Flask",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
