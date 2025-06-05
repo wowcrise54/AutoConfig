@@ -69,6 +69,14 @@ def collect_local_facts():
     ).strip()
     cpu_load = subprocess.check_output(["cat", "/proc/loadavg"], text=True).strip()
 
+    with open("/proc/net/dev", "r") as f:
+        net_stats = f.read().splitlines()
+
+    try:
+        sensors_out = subprocess.check_output(["sensors"], text=True).splitlines()
+    except FileNotFoundError:
+        sensors_out = []
+
     RESULTS_DIR.mkdir(exist_ok=True)
     data = {
         "hostname": hostname,
@@ -77,6 +85,8 @@ def collect_local_facts():
         "disk": disk,
         "memory": memory,
         "cpu_load": cpu_load,
+        "net": net_stats,
+        "sensors": sensors_out,
     }
     with open(RESULTS_DIR / f"facts_{hostname}.json", "w") as f:
         json.dump(data, f, indent=2)
