@@ -13,6 +13,11 @@ if ! command -v ss >/dev/null; then
     sudo apt-get install -y iproute2
 fi
 
+# Install nginx for serving the results
+if ! command -v nginx >/dev/null; then
+    sudo apt-get install -y nginx
+fi
+
 # Install pip and the Jinja2 package used by the helper script
 if ! command -v pip3 >/dev/null; then
     sudo apt-get install -y python3-pip
