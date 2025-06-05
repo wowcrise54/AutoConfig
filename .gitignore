@@ -2,3 +2,4 @@ __pycache__/
 results/
 node_modules/
 templates/dist/
+docs/build/
