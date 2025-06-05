@@ -26,7 +26,11 @@ python3 -m venv venv
 source venv/bin/activate
 ./setup.sh
 pip3 install -r requirements.txt
+# build the React frontend using webpack
+npm install
+npm run build
 ```
+The last two commands generate `templates/dist/bundle.js` used by the HTML template.
 
 ## Usage
 Run the helper script which will invoke the playbook, generate a small React
