@@ -125,6 +125,9 @@ pytest
 
 The CI workflow located in `.github/workflows/ci.yml` automatically executes
 these tests on every push and pull request.
+In addition, the workflow builds the Docker image and scans it with
+[Trivy](https://github.com/aquasecurity/trivy), failing the job if any
+vulnerabilities of **HIGH** or **CRITICAL** severity are detected.
 
 ## Docker
 
