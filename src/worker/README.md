@@ -20,3 +20,4 @@ python -m worker.cmd.main
 ```
 
 The service exposes a health check on `http://localhost:8081/health`.
+Metrics in Prometheus format are available on `http://localhost:8081/metrics`.

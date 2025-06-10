@@ -11,6 +11,7 @@ dependencies = [
     "Flask",
     "pika",
     "requests",
+    "prometheus_client",
 ]
 
 [project.optional-dependencies]

@@ -182,3 +182,10 @@ docker push yourname/autocfg:latest
 
 The compose file can then reference the pushed tag instead of building the
 image locally.
+
+### Monitoring
+
+Both the API server and the worker expose metrics compatible with Prometheus.
+The Flask API provides metrics at `http://localhost:5000/metrics` when running
+locally. The worker exports metrics on the same port as the health check,
+e.g. `http://localhost:8081/metrics`.
