@@ -6,4 +6,5 @@ black
 flake8
 pika
 requests
+PyJWT
 prometheus_client

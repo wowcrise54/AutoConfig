@@ -92,25 +92,33 @@ the `LOG_LEVEL` environment variable to change verbosity, for example:
 LOG_LEVEL=DEBUG python3 -m autoconfig.collect_and_visualize
 ```
 
-### API Token
-Set the `API_TOKEN` environment variable to protect the `/api/hosts` and
-`/api/reload` endpoints. Requests must include an `Authorization` header with
-the same token:
+### Authentication
+The API now uses JWT tokens with roles. Use `/auth/login` to obtain a token and
+include it in the `Authorization` header for all requests:
 
 ```bash
-API_TOKEN=secret python3 -m autoconfig.server
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"username": "admin", "password": "admin"}' \
+     http://localhost:5000/auth/login
+```
+
+Refresh an existing token using `/auth/refresh`:
+
+```bash
+curl -X POST -H "Authorization: Bearer <token>" \
+     http://localhost:5000/auth/refresh
 ```
 
 Example request for listing hosts:
 
 ```bash
-curl -H "Authorization: Bearer secret" http://localhost:5000/api/hosts
+curl -H "Authorization: Bearer <token>" http://localhost:5000/api/hosts
 ```
 
 Reload the database after running the helper script:
 
 ```bash
-curl -X POST -H "Authorization: Bearer secret" \
+curl -X POST -H "Authorization: Bearer <token>" \
      http://localhost:5000/api/reload
 ```
 
