@@ -1,13 +1,19 @@
 import json
 import sqlite3
 from pathlib import Path
-from flask import Flask, jsonify, send_from_directory, request
+from flask import Flask, jsonify, send_from_directory, request, g
 import os
 import logging
 import argparse
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime
+from prometheus_client import (
+    Counter,
+    Histogram,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+)
 
 level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(level=getattr(logging, level_name, logging.INFO))
@@ -41,6 +47,39 @@ class Template:
 
 
 app = Flask(__name__)
+
+# Prometheus metrics
+HTTP_REQUESTS_TOTAL = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "http_status"],
+)
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["endpoint"],
+)
+
+
+@app.before_request
+def start_timer():
+    g.start_time = datetime.utcnow().timestamp()
+
+
+@app.after_request
+def record_metrics(response):
+    endpoint = request.endpoint or "unknown"
+    duration = datetime.utcnow().timestamp() - g.get("start_time", 0)
+    HTTP_REQUESTS_TOTAL.labels(
+        request.method, endpoint, response.status_code
+    ).inc()
+    HTTP_REQUEST_DURATION_SECONDS.labels(endpoint).observe(duration)
+    return response
+
+
+@app.route("/metrics")
+def metrics():
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 
 def init_db():

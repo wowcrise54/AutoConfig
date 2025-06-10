@@ -16,3 +16,11 @@ def test_index_without_file(tmp_path):
         assert resp.status_code == 200
         assert b"Flask server is running" in resp.data
     server.RESULTS_DIR = original_dir
+
+
+def test_metrics_endpoint(tmp_path):
+    app: Flask = server.app
+    with app.test_client() as client:
+        resp = client.get("/metrics")
+        assert resp.status_code == 200
+        assert b"http_requests_total" in resp.data

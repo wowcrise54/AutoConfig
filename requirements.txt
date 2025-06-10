@@ -6,3 +6,4 @@ black
 flake8
 pika
 requests
+prometheus_client
