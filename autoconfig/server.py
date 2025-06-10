@@ -2,12 +2,14 @@ import json
 import sqlite3
 from pathlib import Path
 from flask import Flask, jsonify, send_from_directory, request, g
+from functools import wraps
+import jwt
+from datetime import datetime, timedelta
 import os
 import logging
 import argparse
 import uuid
 from dataclasses import asdict, dataclass
-from datetime import datetime
 from prometheus_client import (
     Counter,
     Histogram,
@@ -19,8 +21,25 @@ level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(level=getattr(logging, level_name, logging.INFO))
 logger = logging.getLogger(__name__)
 
-# Authentication token for API requests
-API_TOKEN = os.environ.get("API_TOKEN")
+# JWT authentication settings
+JWT_SECRET = os.environ.get("JWT_SECRET", "change-me")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRES_SECONDS = int(os.environ.get("JWT_EXPIRES", "3600"))
+
+USERS = {
+    "admin": {
+        "password": os.environ.get("ADMIN_PASSWORD", "admin"),
+        "role": "admin",
+    },
+    "operator": {
+        "password": os.environ.get("OPERATOR_PASSWORD", "operator"),
+        "role": "operator",
+    },
+    "readonly": {
+        "password": os.environ.get("READONLY_PASSWORD", "readonly"),
+        "role": "readonly",
+    },
+}
 
 # ``server.py`` now lives inside the ``autoconfig`` package. ``BASE_DIR``
 # should therefore point to the project root to keep the default ``results``
@@ -44,6 +63,53 @@ class Template:
 
     def to_dict(self):
         return asdict(self)
+
+
+def create_token(username: str, role: str) -> str:
+    payload = {
+        "sub": username,
+        "role": role,
+        "exp": datetime.utcnow() + timedelta(seconds=JWT_EXPIRES_SECONDS),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def decode_token(token: str):
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.PyJWTError:
+        return None
+
+
+def require_auth(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        auth = request.headers.get("Authorization", "")
+        if not auth.startswith("Bearer "):
+            return "", 401
+        token = auth.split(None, 1)[1]
+        payload = decode_token(token)
+        if not payload:
+            return "", 401
+        g.user = payload
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
+def require_roles(*roles):
+    def decorator(f):
+        @wraps(f)
+        @require_auth
+        def wrapper(*args, **kwargs):
+            role = g.user.get("role")
+            if role == "admin" or role in roles:
+                return f(*args, **kwargs)
+            return "", 403
+
+        return wrapper
+
+    return decorator
 
 
 app = Flask(__name__)
@@ -74,12 +140,34 @@ def record_metrics(response):
         request.method, endpoint, response.status_code
     ).inc()
     HTTP_REQUEST_DURATION_SECONDS.labels(endpoint).observe(duration)
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"
+    )
     return response
 
 
 @app.route("/metrics")
 def metrics():
     return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
+
+
+@app.route("/auth/login", methods=["POST"])
+def login():
+    data = request.get_json(force=True)
+    username = data.get("username")
+    password = data.get("password")
+    user = USERS.get(username)
+    if not user or user["password"] != password:
+        return jsonify({"error": "invalid credentials"}), 401
+    token = create_token(username, user["role"])
+    return jsonify({"token": token})
+
+
+@app.route("/auth/refresh", methods=["POST"])
+@require_auth
+def refresh():
+    token = create_token(g.user["sub"], g.user["role"])
+    return jsonify({"token": token})
 
 
 def init_db():
@@ -267,10 +355,8 @@ def get_hosts(search=None, sort=None, order="asc"):
 
 
 @app.route("/api/hosts")
+@require_auth
 def hosts():
-    auth = request.headers.get("Authorization", "")
-    if auth != f"Bearer {API_TOKEN}":
-        return "", 401
     search = request.args.get("search")
     sort = request.args.get("sort")
     order = request.args.get("order", "asc")
@@ -279,10 +365,8 @@ def hosts():
 
 
 @app.route("/api/v1/templates", methods=["POST"])
+@require_roles("admin")
 def create_template_endpoint():
-    auth = request.headers.get("Authorization", "")
-    if auth != f"Bearer {API_TOKEN}":
-        return "", 401
     data = request.get_json(force=True)
     name = data.get("name")
     if not name:
@@ -296,10 +380,8 @@ def create_template_endpoint():
 
 
 @app.route("/api/v1/templates", methods=["GET"])
+@require_auth
 def list_templates_endpoint():
-    auth = request.headers.get("Authorization", "")
-    if auth != f"Bearer {API_TOKEN}":
-        return "", 401
     try:
         limit = int(request.args.get("limit", 100))
         offset = int(request.args.get("offset", 0))
@@ -310,10 +392,8 @@ def list_templates_endpoint():
 
 
 @app.route("/api/v1/templates/<template_id>", methods=["GET"])
+@require_auth
 def get_template_endpoint(template_id):
-    auth = request.headers.get("Authorization", "")
-    if auth != f"Bearer {API_TOKEN}":
-        return "", 401
     tpl = get_template(template_id)
     if not tpl:
         return jsonify({"error": "Template not found"}), 404
@@ -321,10 +401,8 @@ def get_template_endpoint(template_id):
 
 
 @app.route("/api/v1/templates/<template_id>", methods=["PUT"])
+@require_roles("admin")
 def update_template_endpoint(template_id):
-    auth = request.headers.get("Authorization", "")
-    if auth != f"Bearer {API_TOKEN}":
-        return "", 401
     data = request.get_json(force=True)
     description = data.get("description")
     config = data.get("config")
@@ -337,10 +415,8 @@ def update_template_endpoint(template_id):
 
 
 @app.route("/api/v1/templates/<template_id>", methods=["DELETE"])
+@require_roles("admin")
 def delete_template_endpoint(template_id):
-    auth = request.headers.get("Authorization", "")
-    if auth != f"Bearer {API_TOKEN}":
-        return "", 401
     deleted = delete_template(template_id)
     if not deleted:
         return jsonify({"error": "Template not found"}), 404
@@ -348,11 +424,9 @@ def delete_template_endpoint(template_id):
 
 
 @app.route("/api/reload", methods=["POST"])
+@require_roles("admin", "operator")
 def reload_data_endpoint():
-    """Reload host information from ``DATA_JSON``. Requires API token."""
-    auth = request.headers.get("Authorization", "")
-    if auth != f"Bearer {API_TOKEN}":
-        return "", 401
+    """Reload host information from ``DATA_JSON``. Requires authentication."""
     load_data()
     return jsonify({"status": "reloaded"})
 

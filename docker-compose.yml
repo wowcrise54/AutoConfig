@@ -10,6 +10,7 @@ services:
     image: nginx:alpine
     ports:
       - "8080:80"
+      - "8443:443"
     volumes:
       - ./results:/usr/share/nginx/html:ro
       - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro

@@ -19,7 +19,8 @@ def _setup(tmp_path, monkeypatch):
     server.DATA_JSON = data_file
     server.RESULTS_DIR = tmp_path
     server.init_db()
-    monkeypatch.setattr(server, "API_TOKEN", "secret")
+    monkeypatch.setattr(server, "JWT_SECRET", "secret")
+    server.USERS = {"admin": {"password": "admin", "role": "admin"}}
     return original_db, original_json, original_results
 
 
@@ -52,9 +53,12 @@ def test_reload_valid_token(tmp_path, monkeypatch):
     originals = _setup(tmp_path, monkeypatch)
     app = server.app
     with app.test_client() as client:
-        resp = client.post("/api/reload", headers={"Authorization": "Bearer secret"})
+        login = client.post("/auth/login", json={"username": "admin", "password": "admin"})
+        token = login.get_json()["token"]
+        resp = client.post("/api/reload", headers={"Authorization": f"Bearer {token}"})
         assert resp.status_code == 200
         assert resp.get_json() == {"status": "reloaded"}
     hosts = server.get_hosts()
     assert hosts[0]["hostname"] == "alpha"
     _teardown(originals)
+

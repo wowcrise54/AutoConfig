@@ -1,5 +1,6 @@
 import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import ssl
 import threading
 import json
 import time
@@ -35,6 +36,10 @@ def health_server():
         def do_GET(self):
             if self.path == "/health":
                 self.send_response(200)
+                self.send_header(
+                    "Strict-Transport-Security",
+                    "max-age=31536000; includeSubDomains",
+                )
                 self.end_headers()
                 self.wfile.write(b"OK")
             elif self.path == "/metrics":
@@ -42,13 +47,25 @@ def health_server():
                 self.send_response(200)
                 self.send_header("Content-Type", CONTENT_TYPE_LATEST)
                 self.send_header("Content-Length", str(len(data)))
+                self.send_header(
+                    "Strict-Transport-Security",
+                    "max-age=31536000; includeSubDomains",
+                )
                 self.end_headers()
                 self.wfile.write(data)
             else:
                 self.send_response(404)
+                self.send_header(
+                    "Strict-Transport-Security",
+                    "max-age=31536000; includeSubDomains",
+                )
                 self.end_headers()
 
     server = HTTPServer(("0.0.0.0", settings.health_port), Handler)
+    if settings.tls_cert and settings.tls_key:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(settings.tls_cert, settings.tls_key)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
     logger.info("Healthcheck on port %s", settings.health_port)
     server.serve_forever()
 
