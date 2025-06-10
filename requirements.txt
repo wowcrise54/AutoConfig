@@ -4,3 +4,5 @@ Flask
 pytest
 black
 flake8
+pika
+requests

@@ -9,6 +9,8 @@ dependencies = [
     "ansible",
     "Jinja2",
     "Flask",
+    "pika",
+    "requests",
 ]
 
 [project.optional-dependencies]
